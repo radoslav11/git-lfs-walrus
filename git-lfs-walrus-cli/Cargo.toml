@@ -2,7 +2,7 @@
 name = "git-lfs-walrus-cli"
 version = "0.1.0"
 authors = ["Claude Code <claude@anthropic.com>"]
-edition = "2021"
+edition = "2025"
 description = "A git-lfs custom transfer & extension that makes it easy to store large files with Walrus"
 license = "MIT OR Apache-2.0"
 

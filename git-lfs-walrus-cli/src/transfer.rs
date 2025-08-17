@@ -1,10 +1,10 @@
 use anyhow::{Context, Result};
 use futures::{Stream, StreamExt};
-use std::{path::Path};
+use std::path::Path;
 use tokio::io::{AsyncBufRead, AsyncBufReadExt};
 
-use git_lfs_spec::transfer::custom::{self, Complete, Error, Event, Operation, Progress};
 use crate::walrus::WalrusClient;
+use git_lfs_spec::transfer::custom::{self, Complete, Error, Event, Operation, Progress};
 
 pub fn read_events(input: impl AsyncBufRead + Unpin) -> impl Stream<Item = Result<Event>> {
     async_stream::stream! {
@@ -49,7 +49,7 @@ pub fn transfer(
                             // In practice, this would require a mapping between SHA256 and Walrus blob IDs
                             // For now, we'll assume the OID contains the blob ID or we have a way to resolve it
                             let blob_id = &download.object.oid; // Simplified - in reality needs mapping
-                            
+
                             match download_blob(&client, blob_id, &download_folder).await {
                                 Ok((output_path, bytes_downloaded)) => {
                                     yield Ok(Event::Progress(
@@ -60,7 +60,7 @@ pub fn transfer(
                                         }
                                         .into()
                                     ));
-                                    
+
                                     yield Ok(Event::Complete(
                                         Complete {
                                             oid: download.object.oid.clone(),
@@ -125,21 +125,18 @@ async fn download_blob(
     download_folder: impl AsRef<Path>,
 ) -> Result<(std::path::PathBuf, u64)> {
     let output_path = download_folder.as_ref().join(blob_id);
-    
+
     // Download the blob from Walrus
     client.read_blob(blob_id, &output_path).await?;
-    
+
     // Get the file size for progress reporting
     let metadata = tokio::fs::metadata(&output_path).await?;
     let bytes_downloaded = metadata.len();
-    
+
     Ok((output_path, bytes_downloaded))
 }
 
-async fn upload_blob(
-    client: &WalrusClient,
-    file_path: &std::path::Path,
-) -> Result<String> {
+async fn upload_blob(client: &WalrusClient, file_path: &std::path::Path) -> Result<String> {
     // Store the file in Walrus
     let blob_id = client.store_file(file_path).await?;
     Ok(blob_id)
@@ -205,21 +202,21 @@ mod tests {
             ),
             Event::Terminate,
         ];
-        
+
         let output_stream = transfer(
             client,
             futures::stream::iter(input_events.iter().cloned().map(anyhow::Result::Ok)),
             temp_dir.path(),
         );
-        
+
         futures_util::pin_mut!(output_stream);
-        
+
         // Collect events and verify structure
         let mut events = vec![];
         while let Some(event) = output_stream.next().await {
             events.push(event.unwrap());
         }
-        
+
         assert!(matches!(events[0], Event::AcknowledgeInit));
         assert!(matches!(events[1], Event::Complete(_)));
     }

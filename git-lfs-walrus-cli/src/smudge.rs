@@ -1,6 +1,6 @@
 use anyhow::Result;
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite};
 use std::collections::HashMap;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite};
 
 use crate::walrus::WalrusClient;
 
@@ -12,32 +12,32 @@ pub async fn smudge(
     // Read the LFS pointer content
     let mut pointer_content = String::new();
     input.read_to_string(&mut pointer_content).await?;
-    
+
     // Parse the LFS pointer to extract metadata
     let _metadata = parse_lfs_pointer(&pointer_content)?;
-    
+
     // Extract the Walrus blob ID from the comment
     let blob_id = extract_walrus_blob_id(&pointer_content)?;
-    
+
     // Retrieve the original file content from Walrus
     client.read_blob_to_writer(&blob_id, &mut output).await?;
-    
+
     Ok(())
 }
 
 fn parse_lfs_pointer(content: &str) -> Result<HashMap<String, String>> {
     let mut metadata = HashMap::new();
-    
+
     for line in content.lines() {
         if line.starts_with('#') {
             continue; // Skip comments
         }
-        
+
         if let Some((key, value)) = line.split_once(' ') {
             metadata.insert(key.to_string(), value.to_string());
         }
     }
-    
+
     Ok(metadata)
 }
 
@@ -49,7 +49,7 @@ fn extract_walrus_blob_id(content: &str) -> Result<String> {
             }
         }
     }
-    
+
     Err(anyhow::anyhow!("No Walrus blob ID found in LFS pointer"))
 }
 
@@ -68,8 +68,17 @@ size 11
     #[test]
     fn parse_lfs_pointer_extracts_metadata() {
         let metadata = parse_lfs_pointer(LFS_POINTER).unwrap();
-        assert_eq!(metadata.get("version"), Some(&"https://git-lfs.github.com/spec/v1".to_string()));
-        assert_eq!(metadata.get("oid"), Some(&"sha256:b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9".to_string()));
+        assert_eq!(
+            metadata.get("version"),
+            Some(&"https://git-lfs.github.com/spec/v1".to_string())
+        );
+        assert_eq!(
+            metadata.get("oid"),
+            Some(
+                &"sha256:b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+                    .to_string()
+            )
+        );
         assert_eq!(metadata.get("size"), Some(&"11".to_string()));
     }
 
@@ -84,8 +93,10 @@ size 11
     async fn smudge_converts_lfs_pointer_to_file_contents() {
         let client = client();
         let mut cursor = Cursor::new(vec![]);
-        smudge(client, LFS_POINTER.as_bytes(), &mut cursor).await.unwrap();
-        
+        smudge(client, LFS_POINTER.as_bytes(), &mut cursor)
+            .await
+            .unwrap();
+
         // This test would need a valid blob ID that exists in Walrus
         // For now, we just verify the parsing works
     }

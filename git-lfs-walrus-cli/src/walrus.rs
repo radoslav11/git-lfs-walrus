@@ -126,11 +126,17 @@ pub struct WalrusClient {
 
 impl WalrusClient {
     pub fn new() -> Self {
-        Self { config_path: None, walrus_path: None }
+        Self {
+            config_path: None,
+            walrus_path: None,
+        }
     }
 
     pub fn with_path(path: PathBuf) -> Self {
-        Self { config_path: None, walrus_path: Some(path) }
+        Self {
+            config_path: None,
+            walrus_path: Some(path),
+        }
     }
 
     // pub fn with_config(config_path: String) -> Self {
@@ -151,13 +157,17 @@ impl WalrusClient {
         };
 
         let json_input = serde_json::to_string(&store_cmd)?;
-        
-        let mut child = Command::new(self.walrus_path.as_deref().unwrap_or_else(|| "walrus".as_ref()))
-            .args(&["json"])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
+
+        let mut child = Command::new(
+            self.walrus_path
+                .as_deref()
+                .unwrap_or_else(|| "walrus".as_ref()),
+        )
+        .args(&["json"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
 
         if let Some(stdin) = child.stdin.as_mut() {
             stdin.write_all(json_input.as_bytes()).await?;
@@ -165,7 +175,7 @@ impl WalrusClient {
         }
 
         let output = child.wait_with_output().await?;
-        
+
         if !output.status.success() {
             return Err(anyhow::anyhow!(
                 "Walrus store command failed: {}",
@@ -175,13 +185,13 @@ impl WalrusClient {
 
         let response_text = String::from_utf8(output.stdout)?;
         let responses: Vec<StoreResponse> = serde_json::from_str(&response_text)?;
-        
+
         if responses.is_empty() {
             return Err(anyhow::anyhow!("No response from Walrus store command"));
         }
-        
+
         let response = &responses[0];
-        
+
         // Extract blob ID from either newly created or already certified
         let blob_id = if let Some(newly_created) = &response.blob_store_result.newly_created {
             newly_created.blob_id.clone()
@@ -205,13 +215,17 @@ impl WalrusClient {
         };
 
         let json_input = serde_json::to_string(&read_cmd)?;
-        
-        let mut child = Command::new(self.walrus_path.as_deref().unwrap_or_else(|| "walrus".as_ref()))
-            .args(&["json"])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
+
+        let mut child = Command::new(
+            self.walrus_path
+                .as_deref()
+                .unwrap_or_else(|| "walrus".as_ref()),
+        )
+        .args(&["json"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
 
         if let Some(stdin) = child.stdin.as_mut() {
             stdin.write_all(json_input.as_bytes()).await?;
@@ -219,7 +233,7 @@ impl WalrusClient {
         }
 
         let output = child.wait_with_output().await?;
-        
+
         if !output.status.success() {
             return Err(anyhow::anyhow!(
                 "Walrus read command failed: {}",
@@ -237,7 +251,7 @@ impl WalrusClient {
         } else {
             return Err(anyhow::anyhow!("No blob data found in Walrus response"));
         }
-        
+
         Ok(())
     }
 
@@ -246,7 +260,7 @@ impl WalrusClient {
         let temp_dir = tempfile::tempdir()?;
         let temp_path = temp_dir.path().join("temp_blob");
         tokio::fs::write(&temp_path, data).await?;
-        
+
         self.store_file(&temp_path).await
     }
 
@@ -256,7 +270,11 @@ impl WalrusClient {
         let temp_path = temp_dir.path().join("temp_blob");
         tokio::fs::write(&temp_path, data).await?;
 
-        let mut cmd = Command::new(self.walrus_path.as_deref().unwrap_or_else(|| "walrus".as_ref()));
+        let mut cmd = Command::new(
+            self.walrus_path
+                .as_deref()
+                .unwrap_or_else(|| "walrus".as_ref()),
+        );
         cmd.args(&["store", "--dry-run", "--json", &temp_path.to_string_lossy()]);
 
         let output = cmd.output().await?;
@@ -271,7 +289,11 @@ impl WalrusClient {
         Ok(String::from_utf8(output.stdout)?)
     }
 
-    pub async fn read_blob_to_writer(&self, blob_id: &str, mut writer: impl AsyncWrite + Unpin) -> Result<()> {
+    pub async fn read_blob_to_writer(
+        &self,
+        blob_id: &str,
+        mut writer: impl AsyncWrite + Unpin,
+    ) -> Result<()> {
         let read_cmd = ReadCommand {
             config: self.config_path.clone(),
             command: ReadRequest {
@@ -282,13 +304,17 @@ impl WalrusClient {
         };
 
         let json_input = serde_json::to_string(&read_cmd)?;
-        
-        let mut child = Command::new(self.walrus_path.as_deref().unwrap_or_else(|| "walrus".as_ref()))
-            .args(&["json"])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
+
+        let mut child = Command::new(
+            self.walrus_path
+                .as_deref()
+                .unwrap_or_else(|| "walrus".as_ref()),
+        )
+        .args(&["json"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
 
         if let Some(stdin) = child.stdin.as_mut() {
             stdin.write_all(json_input.as_bytes()).await?;
@@ -296,7 +322,7 @@ impl WalrusClient {
         }
 
         let output = child.wait_with_output().await?;
-        
+
         if !output.status.success() {
             return Err(anyhow::anyhow!(
                 "Walrus read command failed: {}",
@@ -307,14 +333,14 @@ impl WalrusClient {
         // Parse the JSON response and decode the base64 blob
         let response_text = String::from_utf8(output.stdout)?;
         let blob_response: serde_json::Value = serde_json::from_str(&response_text)?;
-        
+
         if let Some(blob_base64) = blob_response.get("blob").and_then(|v| v.as_str()) {
             let blob_data = base64::engine::general_purpose::STANDARD.decode(blob_base64)?;
             writer.write_all(&blob_data).await?;
         } else {
             return Err(anyhow::anyhow!("No blob data found in Walrus response"));
         }
-        
+
         Ok(())
     }
 }

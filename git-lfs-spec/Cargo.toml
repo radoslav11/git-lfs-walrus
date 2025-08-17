@@ -2,7 +2,7 @@
 name = "git-lfs-spec"
 version = "0.1.1"
 authors = ["Sameer Puri <crates@purisa.me>"]
-edition = "2021"
+edition = "2025"
 description = "Rust types for Git LFS"
 readme = "../README.md"
 license = "MIT OR Apache-2.0"
