@@ -41,10 +41,34 @@ struct ReadParams {
 
 #[derive(Debug, Deserialize)]
 struct StoreResponse {
+    #[serde(rename = "blobStoreResult")]
+    blob_store_result: BlobStoreResult,
+    path: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct BlobStoreResult {
     #[serde(rename = "newlyCreated")]
-    newly_created: Option<BlobInfo>,
+    newly_created: Option<BlobResult>,
     #[serde(rename = "alreadyCertified")]
-    already_certified: Option<BlobInfo>,
+    already_certified: Option<BlobResult>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BlobResult {
+    #[serde(rename = "blobId")]
+    blob_id: String,
+    event: EventInfo,
+    #[serde(rename = "endEpoch")]
+    end_epoch: u64,
+}
+
+#[derive(Debug, Deserialize)]
+struct EventInfo {
+    #[serde(rename = "txDigest")]
+    tx_digest: String,
+    #[serde(rename = "eventSeq")]
+    event_seq: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -115,7 +139,7 @@ impl WalrusClient {
             command: StoreRequest {
                 store: StoreParams {
                     files: vec![file_path.to_string_lossy().to_string()],
-                    epochs: Some(100), // Default to 100 epochs
+                    epochs: Some(50), // Default to 50 epochs (under the 53 limit)
                 },
             },
         };
@@ -144,13 +168,19 @@ impl WalrusClient {
         }
 
         let response_text = String::from_utf8(output.stdout)?;
-        let response: StoreResponse = serde_json::from_str(&response_text)?;
+        let responses: Vec<StoreResponse> = serde_json::from_str(&response_text)?;
+        
+        if responses.is_empty() {
+            return Err(anyhow::anyhow!("No response from Walrus store command"));
+        }
+        
+        let response = &responses[0];
         
         // Extract blob ID from either newly created or already certified
-        let blob_id = if let Some(newly_created) = response.newly_created {
-            newly_created.blob_object.blob_id
-        } else if let Some(already_certified) = response.already_certified {
-            already_certified.blob_object.blob_id
+        let blob_id = if let Some(newly_created) = &response.blob_store_result.newly_created {
+            newly_created.blob_id.clone()
+        } else if let Some(already_certified) = &response.blob_store_result.already_certified {
+            already_certified.blob_id.clone()
         } else {
             return Err(anyhow::anyhow!("No blob ID found in response"));
         };
@@ -191,8 +221,16 @@ impl WalrusClient {
             ));
         }
 
-        // Write the blob content to the output file
-        tokio::fs::write(output_path, &output.stdout).await?;
+        // Parse the JSON response and decode the base64 blob
+        let response_text = String::from_utf8(output.stdout)?;
+        let blob_response: serde_json::Value = serde_json::from_str(&response_text)?;
+
+        if let Some(blob_base64) = blob_response.get("blob").and_then(|v| v.as_str()) {
+            let blob_data = base64::engine::general_purpose::STANDARD.decode(blob_base64)?;
+            tokio::fs::write(output_path, &blob_data).await?;
+        } else {
+            return Err(anyhow::anyhow!("No blob data found in Walrus response"));
+        }
         
         Ok(())
     }
@@ -239,7 +277,16 @@ impl WalrusClient {
             ));
         }
 
-        writer.write_all(&output.stdout).await?;
+        // Parse the JSON response and decode the base64 blob
+        let response_text = String::from_utf8(output.stdout)?;
+        let blob_response: serde_json::Value = serde_json::from_str(&response_text)?;
+        
+        if let Some(blob_base64) = blob_response.get("blob").and_then(|v| v.as_str()) {
+            let blob_data = base64::engine::general_purpose::STANDARD.decode(blob_base64)?;
+            writer.write_all(&blob_data).await?;
+        } else {
+            return Err(anyhow::anyhow!("No blob data found in Walrus response"));
+        }
         
         Ok(())
     }
