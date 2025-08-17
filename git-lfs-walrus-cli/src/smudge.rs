@@ -43,8 +43,8 @@ fn parse_lfs_pointer(content: &str) -> Result<HashMap<String, String>> {
 
 fn extract_walrus_blob_id(content: &str) -> Result<String> {
     for line in content.lines() {
-        if line.starts_with("# walrus-blob-id:") {
-            if let Some((_, blob_id)) = line.split_once(": ") {
+        if line.starts_with("ext-0-walrus ") {
+            if let Some((_, blob_id)) = line.split_once(' ') {
                 return Ok(blob_id.trim().to_string());
             }
         }
@@ -62,7 +62,7 @@ mod tests {
     const LFS_POINTER: &str = r#"version https://git-lfs.github.com/spec/v1
 oid sha256:b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9
 size 11
-# walrus-blob-id: test-blob-id-123
+ext-0-walrus test-blob-id-123
 "#;
 
     #[test]

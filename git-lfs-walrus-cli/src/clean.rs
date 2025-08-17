@@ -25,18 +25,24 @@ pub async fn clean(
     // Perform a dry run to get the estimated cost
     let dry_run_output = client.store_bytes_dry_run(&data).await?;
     let json_output: Value = serde_json::from_str(&dry_run_output)?;
-    let _total_cost = json_output["totalCost"].as_str().unwrap_or("0");
+    let _total_cost = if let Some(array) = json_output.as_array() {
+        if let Some(first_item) = array.first() {
+            first_item["storageCost"].as_u64().unwrap_or(0).to_string()
+        } else {
+            "0".to_string()
+        }
+    } else {
+        "0".to_string()
+    };
 
     
 
     // Store the data in Walrus
     let blob_id = client.store_bytes(&data).await?;
 
-    // For git-lfs compatibility, we output the original file content
-    // The mapping between SHA256 and Walrus blob ID would need to be maintained separately
-    // For now, we'll store the blob ID as a comment in the file content
+    // Create LFS pointer with Walrus blob ID stored in extension field
     let lfs_pointer = format!(
-        "version https://git-lfs.github.com/spec/v1\noid sha256:{}\nsize {}\n# walrus-blob-id: {}\n",
+        "version https://git-lfs.github.com/spec/v1\noid sha256:{}\nsize {}\next-0-walrus {}\n",
         sha256_hex,
         data.len(),
         blob_id

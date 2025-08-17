@@ -25,6 +25,15 @@ cargo build --release
 
 ### Configuration
 
+Set environment variables for easier configuration (adjust paths as needed):
+
+```bash
+# Set these in your shell profile (~/.bashrc, ~/.zshrc, etc.)
+export GIT_LFS_WALRUS_CLI="${PWD}/target/release/git-lfs-walrus-cli"
+export GIT_LFS_WALRUS_WRAPPER="${PWD}/clean_wrapper.sh" 
+export WALRUS_CLI_PATH="/usr/local/bin/walrus"  # Or wherever walrus is installed
+```
+
 Add the custom transfer and extensions for Walrus to your `~/.gitconfig`:
 
 ```
@@ -32,12 +41,28 @@ Add the custom transfer and extensions for Walrus to your `~/.gitconfig`:
 	standalonetransferagent = walrus
 [lfs "customtransfer.walrus"]
 	path = git-lfs-walrus-cli
-	args = transfer
+	args = --walrus-path ${WALRUS_CLI_PATH} transfer
 	concurrent = true
 	direction = both
 [lfs "extension.walrus"]
-    clean = git-lfs-walrus-cli clean %f
-    smudge = git-lfs-walrus-cli smudge %f
+    clean = ${GIT_LFS_WALRUS_WRAPPER} ${GIT_LFS_WALRUS_CLI} --walrus-path ${WALRUS_CLI_PATH} clean %f
+    smudge = ${GIT_LFS_WALRUS_CLI} --walrus-path ${WALRUS_CLI_PATH} smudge %f
+    priority = 0
+```
+
+Or use relative paths (assuming you're in the git-lfs-walrus directory):
+
+```
+[lfs]
+	standalonetransferagent = walrus
+[lfs "customtransfer.walrus"]
+	path = ../target/release/git-lfs-walrus-cli
+	args = --walrus-path walrus transfer
+	concurrent = true
+	direction = both
+[lfs "extension.walrus"]
+    clean = ../clean_wrapper.sh ../target/release/git-lfs-walrus-cli --walrus-path walrus clean %f
+    smudge = ../target/release/git-lfs-walrus-cli --walrus-path walrus smudge %f
     priority = 0
 ```
 
@@ -59,12 +84,12 @@ Set the default number of epochs for Walrus storage:
 git config lfs.walrus.defaultepochs 25  # Defaults to 50 if not set
 ```
 
-### Additional Commands
+### Additional Commands (WIP)
 
 Check if your LFS files stored in Walrus have expired:
 
 ```bash
-git-lfs-walrus-cli walrus-check                    # Check all LFS files
+git-lfs-walrus-cli walrus-check                      # Check all LFS files
 git-lfs-walrus-cli walrus-check file1.bin file2.bin  # Check specific files
 ```
 
@@ -151,6 +176,46 @@ An interactive test script is provided to demonstrate the functionality of the e
    ../target/release/git-lfs-walrus-cli walrus-check
    ```
 
+#### Verifying File Upload to Walrus
+
+After successfully adding files with `git add`, you can verify the upload worked:
+
+1. **Check the LFS pointer** (shows Walrus blob ID):
+   ```bash
+   git show HEAD:large_file.txt
+   ```
+
+2. **Test end-to-end retrieval** (best verification):
+   ```bash
+   # Backup original, delete, and retrieve from Walrus
+   cp large_file.txt large_file.txt.backup
+   rm large_file.txt
+   git checkout large_file.txt
+   
+   # Compare original vs retrieved
+   echo "=== Original ==="
+   cat large_file.txt.backup
+   echo "=== Retrieved from Walrus ==="
+   cat large_file.txt
+   ```
+
+3. **Extract Walrus blob ID** (for direct Walrus commands):
+   ```bash
+   # The actual Walrus blob ID is in the comment line (if present)
+   BLOB_ID=$(git show HEAD:large_file.txt | grep "# walrus-blob-id:" | cut -d':' -f2 | tr -d ' ')
+   echo "Walrus Blob ID: $BLOB_ID"
+   
+   # Note: The ext-0-walrus field contains a SHA256 hash, not the Walrus blob ID
+   # Check blob status in Walrus (when blob ID is available)
+   if [ ! -z "$BLOB_ID" ]; then
+     walrus blob-status --blob-id $BLOB_ID
+   else
+     echo "Walrus blob ID not found in LFS pointer"
+   fi
+   ```
+
+**✅ Success indicator**: If `git checkout` successfully retrieves the original file content after deletion, your integration is working perfectly!
+
 #### Full Manual Setup
 
 If you want to create your own test repository:
@@ -161,14 +226,14 @@ mkdir my-test-repo && cd my-test-repo
 git init
 git lfs install
 
-# Configure git-lfs-walrus (adjust paths as needed)
+# Configure git-lfs-walrus (using relative paths from parent directory)
 git config lfs.standalonetransferagent walrus
-git config lfs.customtransfer.walrus.path "/path/to/git-lfs-walrus-cli"
-git config lfs.customtransfer.walrus.args "transfer"
+git config lfs.customtransfer.walrus.path "../target/release/git-lfs-walrus-cli"
+git config lfs.customtransfer.walrus.args "--walrus-path walrus transfer"
 git config lfs.customtransfer.walrus.concurrent true
 git config lfs.customtransfer.walrus.direction both
-git config lfs.extension.walrus.clean "/path/to/clean_wrapper.sh /path/to/git-lfs-walrus-cli --walrus-path /path/to/walrus clean %f"
-git config lfs.extension.walrus.smudge "/path/to/git-lfs-walrus-cli --walrus-path /path/to/walrus smudge %f"
+git config lfs.extension.walrus.clean "../clean_wrapper.sh ../target/release/git-lfs-walrus-cli --walrus-path walrus clean %f"
+git config lfs.extension.walrus.smudge "../target/release/git-lfs-walrus-cli --walrus-path walrus smudge %f"
 git config lfs.extension.walrus.priority 0
 
 # Track large files
@@ -178,6 +243,13 @@ echo "large file content" > large-file.bin
 # Add and commit (this will use Walrus)
 git add .gitattributes large-file.bin
 git commit -m "Add large file stored in Walrus"
+
+# Check the blob
+BLOB_ID=$(git show HEAD:large-file.bin | grep "ext-0-walrus" | cut -d' ' -f2 | cut -d':' -f2)
+echo "Walrus Blob ID: $BLOB_ID"
+   
+# Check blob status in Walrus (when blob ID format is supported)
+walrus blob-status --blob-id $BLOB_ID
 ```
 
 ### Troubleshooting Tests
