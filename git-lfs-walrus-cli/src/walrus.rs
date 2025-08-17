@@ -3,7 +3,7 @@ use base64::Engine;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::process::Stdio;
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tokio::process::Command;
 
 #[derive(Debug, Serialize)]
@@ -44,7 +44,7 @@ struct ReadParams {
 struct StoreResponse {
     #[serde(rename = "blobStoreResult")]
     blob_store_result: BlobStoreResult,
-    path: String,
+    // path: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -59,64 +59,64 @@ struct BlobStoreResult {
 struct BlobResult {
     #[serde(rename = "blobId")]
     blob_id: String,
-    event: EventInfo,
-    #[serde(rename = "endEpoch")]
-    end_epoch: u64,
+    // event: EventInfo,
+    // #[serde(rename = "endEpoch")]
+    // end_epoch: u64,
 }
 
 #[derive(Debug, Deserialize)]
 struct EventInfo {
-    #[serde(rename = "txDigest")]
-    tx_digest: String,
-    #[serde(rename = "eventSeq")]
-    event_seq: String,
+    // #[serde(rename = "txDigest")]
+    // tx_digest: String,
+    // #[serde(rename = "eventSeq")]
+    // event_seq: String,
 }
 
 #[derive(Debug, Deserialize)]
 struct BlobInfo {
-    #[serde(rename = "blobObject")]
-    blob_object: BlobObject,
-    #[serde(rename = "resourceOperation")]
-    resource_operation: ResourceOperation,
+    // #[serde(rename = "blobObject")]
+    // blob_object: BlobObject,
+    // #[serde(rename = "resourceOperation")]
+    // resource_operation: ResourceOperation,
 }
 
 #[derive(Debug, Deserialize)]
 struct BlobObject {
-    id: String,
-    #[serde(rename = "storedEpoch")]
-    stored_epoch: u64,
-    #[serde(rename = "blobId")]
-    blob_id: String,
-    size: u64,
-    #[serde(rename = "erasureCodeType")]
-    erasure_code_type: String,
-    #[serde(rename = "certifiedEpoch")]
-    certified_epoch: u64,
-    storage: Storage,
+    // id: String,
+    // #[serde(rename = "storedEpoch")]
+    // stored_epoch: u64,
+    // #[serde(rename = "blobId")]
+    // blob_id: String,
+    // size: u64,
+    // #[serde(rename = "erasureCodeType")]
+    // erasure_code_type: String,
+    // #[serde(rename = "certifiedEpoch")]
+    // certified_epoch: u64,
+    // storage: Storage,
 }
 
 #[derive(Debug, Deserialize)]
 struct Storage {
-    id: String,
-    #[serde(rename = "startEpoch")]
-    start_epoch: u64,
-    #[serde(rename = "endEpoch")]
-    end_epoch: u64,
-    #[serde(rename = "storageSize")]
-    storage_size: u64,
+    // id: String,
+    // #[serde(rename = "startEpoch")]
+    // start_epoch: u64,
+    // #[serde(rename = "endEpoch")]
+    // end_epoch: u64,
+    // #[serde(rename = "storageSize")]
+    // storage_size: u64,
 }
 
 #[derive(Debug, Deserialize)]
 struct ResourceOperation {
-    #[serde(rename = "RegisterFromScratch")]
-    register_from_scratch: Option<RegisterFromScratch>,
+    // #[serde(rename = "RegisterFromScratch")]
+    // register_from_scratch: Option<RegisterFromScratch>,
 }
 
 #[derive(Debug, Deserialize)]
 struct RegisterFromScratch {
-    #[serde(rename = "encoded_length")]
-    encoded_length: u64,
-    epochs: u64,
+    // #[serde(rename = "encoded_length")]
+    // encoded_length: u64,
+    // epochs: u64,
 }
 
 pub struct WalrusClient {
@@ -128,11 +128,11 @@ impl WalrusClient {
         Self { config_path: None }
     }
 
-    pub fn with_config(config_path: String) -> Self {
-        Self {
-            config_path: Some(config_path),
-        }
-    }
+    // pub fn with_config(config_path: String) -> Self {
+    //     Self {
+    //         config_path: Some(config_path),
+    //     }
+    // }
 
     pub async fn store_file(&self, file_path: &Path) -> Result<String> {
         let store_cmd = StoreCommand {
@@ -299,13 +299,13 @@ impl Default for WalrusClient {
     }
 }
 
-pub fn sha256_to_blob_id(sha256_str: &str) -> Result<String> {
-    // For git-lfs compatibility, we use the SHA256 hash as the blob ID
-    // Since Walrus generates its own blob IDs, we'll need to maintain a mapping
-    // This is a simplified approach - in practice, you might want to use
-    // the actual Walrus blob ID and maintain a separate mapping
-    Ok(sha256_str.to_string())
-}
+// pub fn sha256_to_blob_id(sha256_str: &str) -> Result<String> {
+//     // For git-lfs compatibility, we use the SHA256 hash as the blob ID
+//     // Since Walrus generates its own blob IDs, we'll need to maintain a mapping
+//     // This is a simplified approach - in practice, you might want to use
+//     // the actual Walrus blob ID and maintain a separate mapping
+//     Ok(sha256_str.to_string())
+// }
 
 pub fn client() -> WalrusClient {
     WalrusClient::default()

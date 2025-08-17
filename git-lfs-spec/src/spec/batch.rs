@@ -101,20 +101,20 @@ pub struct ObjectError {
 }
 
 impl ObjectError {
-    pub fn DoesNotExist() -> Self {
+    pub fn does_not_exist() -> Self {
         Self {
             code: 404u16,
             message: "Object does not exist",
         }
     }
 
-    pub fn RemovedByOwner() -> Self {
+    pub fn removed_by_owner() -> Self {
         Self {
             code: 410u16,
             message: "Object removed by owner",
         }
     }
-    pub fn ValidationError() -> Self {
+    pub fn validation_error() -> Self {
         Self {
             code: 422u16,
             message: "Validation error",
@@ -168,6 +168,7 @@ pub struct LfsErrorResponse {
 }
 
 impl LfsErrorResponse {
+    /*
     const ACCEPT_HEADER_INCORRECT: Self = Self {
         message: "The Accept header needs to be `application/vnd.git-lfs+json`.",
         documentation_url: None,
@@ -199,6 +200,7 @@ impl LfsErrorResponse {
         request_id: None,
         status: 509u16,
     };
+    */
 }
 
 #[cfg(test)]
@@ -243,7 +245,7 @@ mod test {
             serde_json::to_string_pretty(&BatchResponse {
                 transfer: Some(Transfer::Basic),
                 objects: vec![ObjectResponse::Error {
-                    error: ObjectError::DoesNotExist(),
+                    error: ObjectError::does_not_exist(),
                     object: Object {
                         oid: "1111111".to_string(),
                         size: 123,

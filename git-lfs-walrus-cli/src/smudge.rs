@@ -1,5 +1,5 @@
 use anyhow::Result;
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite};
 use std::collections::HashMap;
 
 use crate::walrus::WalrusClient;

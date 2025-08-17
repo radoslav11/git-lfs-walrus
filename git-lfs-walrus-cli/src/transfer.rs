@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use futures::{Stream, StreamExt};
-use std::{io::Write, path::Path};
+use std::{path::Path};
 use tokio::io::{AsyncBufRead, AsyncBufReadExt};
 
 use git_lfs_spec::transfer::custom::{self, Complete, Error, Event, Operation, Progress};

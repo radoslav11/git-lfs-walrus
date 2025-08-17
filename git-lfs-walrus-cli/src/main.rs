@@ -20,14 +20,14 @@ enum GitLfsWalrus {
     /// https://github.com/git-lfs/git-lfs/blob/main/docs/extensions.md#smudge
     Smudge {
         /// Name of the file
-        filename: PathBuf,
+        _filename: PathBuf,
     },
     /// git-lfs clean filter extension for Walrus
     ///
     /// <https://github.com/git-lfs/git-lfs/blob/main/docs/extensions.md#clean>
     Clean {
         /// Name of the file
-        filename: PathBuf,
+        _filename: PathBuf,
     },
     /// git-lfs custom transfer for Walrus
     ///
@@ -39,8 +39,8 @@ enum GitLfsWalrus {
 async fn main() -> Result<()> {
     let client = crate::walrus::client();
     match GitLfsWalrus::from_args() {
-        GitLfsWalrus::Smudge { filename: _ } => smudge(client, stdin(), stdout()).await,
-        GitLfsWalrus::Clean { filename: _ } => clean(client, std::io::stdin(), stdout()).await,
+        GitLfsWalrus::Smudge { .. } => smudge(client, stdin(), stdout()).await,
+        GitLfsWalrus::Clean { .. } => clean(client, std::io::stdin(), stdout()).await,
         GitLfsWalrus::Transfer => {
             let buffered_stdin = BufReader::new(stdin());
             let input_event_stream = transfer::read_events(buffered_stdin);
