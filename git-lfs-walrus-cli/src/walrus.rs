@@ -145,8 +145,17 @@ impl WalrusClient {
     }
 
     fn get_default_epochs() -> u64 {
+        let Ok(toplevel) = std::process::Command::new("git")
+            .args(&["rev-parse", "--show-toplevel"])
+            .output() else {
+                return 50;
+            };
+
+        let toplevel_path = String::from_utf8(toplevel.stdout).unwrap();
+
         // Try to get from git config, fall back to 50
         std::process::Command::new("git")
+            .current_dir(toplevel_path.trim())
             .args(&["config", "--get", "lfs.walrus.defaultepochs"])
             .output()
             .ok()
