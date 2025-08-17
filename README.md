@@ -29,9 +29,9 @@ Set environment variables for easier configuration (adjust paths as needed):
 
 ```bash
 # Set these in your shell profile (~/.bashrc, ~/.zshrc, etc.)
-export GIT_LFS_WALRUS_CLI="${PWD}/target/release/git-lfs-walrus-cli"
-export GIT_LFS_WALRUS_WRAPPER="${PWD}/clean_wrapper.sh" 
 export WALRUS_CLI_PATH="/usr/local/bin/walrus"  # Or wherever walrus is installed
+export GIT_LFS_WALRUS_CLI="${THIS_REPO}/target/release/git-lfs-walrus-cli"
+export GIT_LFS_WALRUS_WRAPPER="${THIS_REPO}/clean_wrapper.sh" 
 ```
 
 Add the custom transfer and extensions for Walrus to your `~/.gitconfig`:
@@ -47,22 +47,6 @@ Add the custom transfer and extensions for Walrus to your `~/.gitconfig`:
 [lfs "extension.walrus"]
     clean = ${GIT_LFS_WALRUS_WRAPPER} ${GIT_LFS_WALRUS_CLI} --walrus-path ${WALRUS_CLI_PATH} clean %f
     smudge = ${GIT_LFS_WALRUS_CLI} --walrus-path ${WALRUS_CLI_PATH} smudge %f
-    priority = 0
-```
-
-Or use relative paths (assuming you're in the git-lfs-walrus directory):
-
-```
-[lfs]
-	standalonetransferagent = walrus
-[lfs "customtransfer.walrus"]
-	path = ../target/release/git-lfs-walrus-cli
-	args = --walrus-path walrus transfer
-	concurrent = true
-	direction = both
-[lfs "extension.walrus"]
-    clean = ../clean_wrapper.sh ../target/release/git-lfs-walrus-cli --walrus-path walrus clean %f
-    smudge = ../target/release/git-lfs-walrus-cli --walrus-path walrus smudge %f
     priority = 0
 ```
 
@@ -205,16 +189,8 @@ After successfully adding files with `git add`, you can verify the upload worked
    BLOB_ID=$(git show HEAD:large_file.txt | grep "# walrus-blob-id:" | cut -d':' -f2 | tr -d ' ')
    echo "Walrus Blob ID: $BLOB_ID"
    
-   # Note: The ext-0-walrus field contains a SHA256 hash, not the Walrus blob ID
-   # Check blob status in Walrus (when blob ID is available)
-   if [ ! -z "$BLOB_ID" ]; then
-     walrus blob-status --blob-id $BLOB_ID
-   else
-     echo "Walrus blob ID not found in LFS pointer"
-   fi
+   walrus blob-status --blob-id $BLOB_ID
    ```
-
-**✅ Success indicator**: If `git checkout` successfully retrieves the original file content after deletion, your integration is working perfectly!
 
 #### Full Manual Setup
 
