@@ -51,6 +51,30 @@ git add large-file.bin
 git commit -m "Add large file"
 ```
 
+### Configuration Options
+
+Set the default number of epochs for Walrus storage:
+
+```bash
+git config lfs.walrus.defaultepochs 25  # Defaults to 50 if not set
+```
+
+### Additional Commands
+
+Check if your LFS files stored in Walrus have expired:
+
+```bash
+git-lfs-walrus-cli walrus-check                    # Check all LFS files
+git-lfs-walrus-cli walrus-check file1.bin file2.bin  # Check specific files
+```
+
+Refresh expired files in Walrus:
+
+```bash
+git-lfs-walrus-cli walrus-refresh                   # Refresh all expired files
+git-lfs-walrus-cli walrus-refresh file1.bin         # Refresh specific files
+```
+
 ## How it works
 
 - **Clean**: Stores files in Walrus and creates LFS pointer files with Walrus blob IDs
@@ -87,11 +111,13 @@ cargo test -- --ignored
 
 ### Integration Testing
 
-An interactive test script is provided to demonstrate the functionality of the extension. To run it, execute the following command:
+An interactive test script is provided to demonstrate the functionality of the extension:
 
 ```bash
 ./integration_test.sh
 ```
+
+#### Quick Integration Test
 
 1. **Build the project**:
    ```bash
@@ -100,43 +126,59 @@ An interactive test script is provided to demonstrate the functionality of the e
 
 2. **Manual CLI testing**:
    ```bash
-   # Test storing a file
-   echo "hello world" > test.txt
-   ./target/release/git-lfs-walrus-cli clean test.txt < test.txt
-   
    # Test basic argument parsing
    ./target/release/git-lfs-walrus-cli --help
+   
+   # Test new commands
+   ./target/release/git-lfs-walrus-cli walrus-check
+   ./target/release/git-lfs-walrus-cli walrus-refresh
    ```
 
-3. **Git LFS integration test**:
+3. **Git LFS integration test** (using the provided test-repo):
    ```bash
-   # Create a test repository
-   mkdir test-repo && cd test-repo
-   git init
-   git lfs install
+   cd test-repo
    
-   # Configure git-lfs-walrus (make sure the path is correct)
-   git config lfs.standalonetransferagent walrus
-   git config lfs.customtransfer.walrus.path "/path/to/git-lfs-walrus-cli"
-   git config lfs.customtransfer.walrus.args "transfer"
-   git config lfs.customtransfer.walrus.concurrent true
-   git config lfs.customtransfer.walrus.direction both
-   git config lfs.extension.walrus.clean "git-lfs-walrus-cli clean %f"
-   git config lfs.extension.walrus.smudge "git-lfs-walrus-cli smudge %f"
-   git config lfs.extension.walrus.priority 0
+   # Configure default epochs (optional)
+   git config lfs.walrus.defaultepochs 25
    
-   # Track large files
-   git lfs track "*.bin"
-   echo "large file content" > large-file.bin
+   # Add files (triggers Walrus storage)
+   git add .gitattributes large_file.txt
    
-   # Add and commit (this will use Walrus)
-   git add .gitattributes large-file.bin
-   git commit -m "Add large file stored in Walrus"
+   # Check status
+   git status
    
-   # Test retrieval
-   rm large-file.bin
-   git checkout large-file.bin  # Should retrieve from Walrus
+   # Test commands
+   ../target/release/git-lfs-walrus-cli walrus-check
    ```
+
+#### Full Manual Setup
+
+If you want to create your own test repository:
+
+```bash
+# Create a test repository
+mkdir my-test-repo && cd my-test-repo
+git init
+git lfs install
+
+# Configure git-lfs-walrus (adjust paths as needed)
+git config lfs.standalonetransferagent walrus
+git config lfs.customtransfer.walrus.path "/path/to/git-lfs-walrus-cli"
+git config lfs.customtransfer.walrus.args "transfer"
+git config lfs.customtransfer.walrus.concurrent true
+git config lfs.customtransfer.walrus.direction both
+git config lfs.extension.walrus.clean "/path/to/clean_wrapper.sh /path/to/git-lfs-walrus-cli --walrus-path /path/to/walrus clean %f"
+git config lfs.extension.walrus.smudge "/path/to/git-lfs-walrus-cli --walrus-path /path/to/walrus smudge %f"
+git config lfs.extension.walrus.priority 0
+
+# Track large files
+echo "*.bin filter=lfs diff=lfs merge=lfs -text" > .gitattributes
+echo "large file content" > large-file.bin
+
+# Add and commit (this will use Walrus)
+git add .gitattributes large-file.bin
+git commit -m "Add large file stored in Walrus"
+```
 
 ### Troubleshooting Tests
 

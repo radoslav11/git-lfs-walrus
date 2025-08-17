@@ -5,12 +5,14 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 use tokio::io::{stdin, stdout, BufReader};
 
-use crate::{clean::clean, smudge::smudge, walrus::WalrusClient};
+use crate::{clean::clean, smudge::smudge, walrus::WalrusClient, walrus_check::walrus_check, walrus_refresh::walrus_refresh};
 
 mod clean;
 mod smudge;
 mod transfer;
 mod walrus;
+mod walrus_check;
+mod walrus_refresh;
 
 #[derive(Debug, StructOpt)]
 #[structopt(author, about)]
@@ -42,6 +44,16 @@ enum Command {
     ///
     /// <https://github.com/git-lfs/git-lfs/blob/main/docs/custom-transfers.md>
     Transfer,
+    /// Check if files stored in Walrus have expired
+    WalrusCheck {
+        /// Files to check (if none provided, checks all LFS files)
+        files: Vec<PathBuf>,
+    },
+    /// Refresh expired files in Walrus
+    WalrusRefresh {
+        /// Files to refresh (if none provided, refreshes all expired LFS files)
+        files: Vec<PathBuf>,
+    },
 }
 
 #[tokio::main]
@@ -72,5 +84,7 @@ async fn main() -> Result<()> {
             }
             Ok(())
         }
+        Command::WalrusCheck { files } => walrus_check(client, files).await,
+        Command::WalrusRefresh { files } => walrus_refresh(client, files).await,
     }
 }

@@ -122,6 +122,7 @@ struct RegisterFromScratch {
 pub struct WalrusClient {
     config_path: Option<String>,
     walrus_path: Option<PathBuf>,
+    default_epochs: u64,
 }
 
 impl WalrusClient {
@@ -129,6 +130,7 @@ impl WalrusClient {
         Self {
             config_path: None,
             walrus_path: None,
+            default_epochs: Self::get_default_epochs(),
         }
     }
 
@@ -136,7 +138,26 @@ impl WalrusClient {
         Self {
             config_path: None,
             walrus_path: Some(path),
+            default_epochs: Self::get_default_epochs(),
         }
+    }
+
+    fn get_default_epochs() -> u64 {
+        // Try to get from git config, fall back to 50
+        std::process::Command::new("git")
+            .args(&["config", "--get", "lfs.walrus.defaultepochs"])
+            .output()
+            .ok()
+            .and_then(|output| {
+                if output.status.success() {
+                    String::from_utf8(output.stdout)
+                        .ok()
+                        .and_then(|s| s.trim().parse().ok())
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(50)
     }
 
     // pub fn with_config(config_path: String) -> Self {
@@ -151,7 +172,7 @@ impl WalrusClient {
             command: StoreRequest {
                 store: StoreParams {
                     files: vec![file_path.to_string_lossy().to_string()],
-                    epochs: Some(50), // Default to 50 epochs (under the 53 limit)
+                    epochs: Some(self.default_epochs),
                 },
             },
         };
@@ -275,7 +296,7 @@ impl WalrusClient {
                 .as_deref()
                 .unwrap_or_else(|| "walrus".as_ref()),
         );
-        cmd.args(&["store", "--dry-run", "--json", &temp_path.to_string_lossy()]);
+        cmd.args(&["store", "--dry-run", "--json", "--epochs", &self.default_epochs.to_string(), &temp_path.to_string_lossy()]);
 
         let output = cmd.output().await?;
 

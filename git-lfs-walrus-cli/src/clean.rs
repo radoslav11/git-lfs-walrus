@@ -1,4 +1,4 @@
-use std::io::{Read, Write};
+use std::io::Read;
 
 use anyhow::Result;
 use serde_json::Value;
@@ -25,19 +25,9 @@ pub async fn clean(
     // Perform a dry run to get the estimated cost
     let dry_run_output = client.store_bytes_dry_run(&data).await?;
     let json_output: Value = serde_json::from_str(&dry_run_output)?;
-    let total_cost = json_output["totalCost"].as_str().unwrap_or("0");
+    let _total_cost = json_output["totalCost"].as_str().unwrap_or("0");
 
-    // Print the estimated cost and ask for confirmation
-    eprintln!("Estimated cost to store this file: {} MIST", total_cost);
-    eprintln!("Do you want to proceed? (y/n)");
-
-    let mut confirmation = String::new();
-    std::io::stdin().read_line(&mut confirmation)?;
-
-    if confirmation.trim().to_lowercase() != "y" {
-        eprintln!("Aborting.");
-        return Ok(());
-    }
+    
 
     // Store the data in Walrus
     let blob_id = client.store_bytes(&data).await?;
