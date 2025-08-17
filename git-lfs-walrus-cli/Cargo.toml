@@ -1,0 +1,25 @@
+[package]
+name = "git-lfs-walrus-cli"
+version = "0.1.0"
+authors = ["Claude Code <claude@anthropic.com>"]
+edition = "2021"
+description = "A git-lfs custom transfer & extension that makes it easy to store large files with Walrus"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+anyhow = "1"
+serde_json = "1"
+git-lfs-spec = { path = "../git-lfs-spec", version = "0" }
+structopt = "0.3"
+serde = { version = "1", features = ["derive"] }
+futures = "0.3"
+tokio = { version = "1", features = ["io-util", "macros", "io-std", "rt-multi-thread", "rt", "process", "fs"], default-features = false }
+async-stream = "0.3"
+futures-util = "0.3"
+hex = "0"
+sha2 = "0.10"
+tempfile = "3"
+
+[dev-dependencies]
+pretty_assertions = "0"
+tempfile = "3"

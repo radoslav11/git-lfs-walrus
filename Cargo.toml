@@ -1,0 +1,2 @@
+[workspace]
+members = ["git-lfs-walrus-cli", "git-lfs-spec"]
