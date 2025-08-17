@@ -87,6 +87,12 @@ cargo test -- --ignored
 
 ### Integration Testing
 
+An interactive test script is provided to demonstrate the functionality of the extension. To run it, execute the following command:
+
+```bash
+./integration_test.sh
+```
+
 1. **Build the project**:
    ```bash
    cargo build --release
