@@ -1,8 +1,9 @@
-use std::io::Read;
+use std::io::{Read, Write};
 
 use anyhow::Result;
-use tokio::io::{AsyncWrite, AsyncWriteExt};
+use serde_json::Value;
 use sha2::{Digest, Sha256};
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 
 use crate::walrus::WalrusClient;
 
@@ -14,16 +15,33 @@ pub async fn clean(
     // Read all input data
     let mut data = Vec::new();
     input.read_to_end(&mut data)?;
-    
+
     // Calculate SHA256 hash for the original file
     let mut hasher = Sha256::new();
     hasher.update(&data);
     let hash = hasher.finalize();
     let sha256_hex = hex::encode(hash);
-    
+
+    // Perform a dry run to get the estimated cost
+    let dry_run_output = client.store_bytes_dry_run(&data).await?;
+    let json_output: Value = serde_json::from_str(&dry_run_output)?;
+    let total_cost = json_output["totalCost"].as_str().unwrap_or("0");
+
+    // Print the estimated cost and ask for confirmation
+    eprintln!("Estimated cost to store this file: {} MIST", total_cost);
+    eprintln!("Do you want to proceed? (y/n)");
+
+    let mut confirmation = String::new();
+    std::io::stdin().read_line(&mut confirmation)?;
+
+    if confirmation.trim().to_lowercase() != "y" {
+        eprintln!("Aborting.");
+        return Ok(());
+    }
+
     // Store the data in Walrus
     let blob_id = client.store_bytes(&data).await?;
-    
+
     // For git-lfs compatibility, we output the original file content
     // The mapping between SHA256 and Walrus blob ID would need to be maintained separately
     // For now, we'll store the blob ID as a comment in the file content
@@ -33,9 +51,9 @@ pub async fn clean(
         data.len(),
         blob_id
     );
-    
+
     output.write_all(lfs_pointer.as_bytes()).await?;
-    
+
     Ok(())
 }
 
@@ -53,7 +71,7 @@ mod tests {
         let client = client();
         let mut cursor = Cursor::new(vec![]);
         clean(client, FILE, &mut cursor).await.unwrap();
-        
+
         let result = String::from_utf8(cursor.into_inner()).unwrap();
         assert!(result.contains("version https://git-lfs.github.com/spec/v1"));
         assert!(result.contains("oid sha256:"));

@@ -250,6 +250,27 @@ impl WalrusClient {
         self.store_file(&temp_path).await
     }
 
+    pub async fn store_bytes_dry_run(&self, data: &[u8]) -> Result<String> {
+        // Create a temporary file to store the data
+        let temp_dir = tempfile::tempdir()?;
+        let temp_path = temp_dir.path().join("temp_blob");
+        tokio::fs::write(&temp_path, data).await?;
+
+        let mut cmd = Command::new(self.walrus_path.as_deref().unwrap_or_else(|| "walrus".as_ref()));
+        cmd.args(&["store", "--dry-run", "--json", &temp_path.to_string_lossy()]);
+
+        let output = cmd.output().await?;
+
+        if !output.status.success() {
+            return Err(anyhow::anyhow!(
+                "Walrus store dry-run command failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        }
+
+        Ok(String::from_utf8(output.stdout)?)
+    }
+
     pub async fn read_blob_to_writer(&self, blob_id: &str, mut writer: impl AsyncWrite + Unpin) -> Result<()> {
         let read_cmd = ReadCommand {
             config: self.config_path.clone(),

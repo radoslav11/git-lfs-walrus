@@ -36,6 +36,7 @@ git lfs install
 
 # Configure git-lfs-walrus
 WALRUS_CLI_PATH=$(realpath ../target/release/git-lfs-walrus-cli)
+CLEAN_WRAPPER_PATH=$(realpath ../clean_wrapper.sh)
 echo "Configuring git-lfs-walrus with path: $WALRUS_CLI_PATH"
 git config lfs.standalonetransferagent walrus
 git config lfs.customtransfer.walrus.path "$WALRUS_CLI_PATH"
@@ -44,7 +45,7 @@ git config lfs.customtransfer.walrus.args "$_args"
 git config lfs.customtransfer.walrus.concurrent true
 git config lfs.customtransfer.walrus.direction both
 _clean_args="--walrus-path $WALRUS_PATH clean %f"
-git config lfs.extension.walrus.clean "$WALRUS_CLI_PATH $_clean_args"
+git config lfs.extension.walrus.clean "$CLEAN_WRAPPER_PATH $WALRUS_CLI_PATH $_clean_args"
 _smudge_args="--walrus-path $WALRUS_PATH smudge %f"
 git config lfs.extension.walrus.smudge "$WALRUS_CLI_PATH $_smudge_args"
 git config lfs.extension.walrus.priority 0
