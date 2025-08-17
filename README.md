@@ -1,5 +1,9 @@
 # git-lfs-walrus
 
+<div align="center">
+  <img src="logo.png" alt="git-lfs-walrus logo" width="200"/>
+</div>
+
 A [git-lfs](https://git-lfs.github.com/) custom transfer & extension that stores large files with Walrus decentralized storage.
 
 *Based on the excellent [git-lfs-ipfs](https://github.com/sameer/git-lfs-ipfs) project by Sameer Puri.*

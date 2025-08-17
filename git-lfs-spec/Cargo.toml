@@ -8,9 +8,7 @@ readme = "../README.md"
 license = "MIT OR Apache-2.0"
 
 [badges]
-is-it-maintained-issue-resolution = { repository = "sameer/git-lfs-ipfs" }
-is-it-maintained-open-issues = { repository = "sameer/git-lfs-ipfs" }
-maintenance = { status = "passively-maintained" }
+maintenance = { status = "actively-maintained" }
 
 [dependencies]
 serde = "1"
