@@ -127,7 +127,7 @@ git add .gitattributes large-file.bin
 git commit -m "Add large file stored in Walrus"
 
 # Check the blob
-BLOB_ID=$(git show HEAD:large-file.bin | grep "ext-0-walrus" | cut -d' ' -f2 | cut -d':' -f2)
+BLOB_ID=$(../target/release/git-lfs-walrus-cli walrus-blob-id large-file.bin | grep "Walrus Blob ID:" | awk -F': ' '{print $2}')
 echo "Walrus Blob ID: $BLOB_ID"
    
 # Check blob status in Walrus (when blob ID format is supported)

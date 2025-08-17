@@ -2,11 +2,12 @@ use anyhow::Result;
 use std::path::PathBuf;
 use std::process::Stdio;
 use tokio::process::Command;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 
 use crate::walrus::WalrusClient;
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct BlobStatusResponse {
     #[serde(rename = "blobObject")]
     blob_object: Option<BlobObjectStatus>,
@@ -14,6 +15,7 @@ struct BlobStatusResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct BlobObjectStatus {
     id: String,
     #[serde(rename = "storedEpoch")]
@@ -27,6 +29,7 @@ struct BlobObjectStatus {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct StorageStatus {
     id: String,
     #[serde(rename = "startEpoch")]
