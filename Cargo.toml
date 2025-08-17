@@ -1,2 +1,3 @@
 [workspace]
+resolver = "2"
 members = ["git-lfs-walrus-cli", "git-lfs-spec"]

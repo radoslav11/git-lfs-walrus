@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 use tokio::io::{stdin, stdout, BufReader};
 
-use crate::{clean::clean, smudge::smudge, walrus::WalrusClient, walrus_check::walrus_check, walrus_refresh::walrus_refresh};
+use crate::{clean::clean, smudge::smudge, walrus::WalrusClient, walrus_check::walrus_check, walrus_refresh::walrus_refresh, walrus_blob_id::walrus_blob_id};
 
 mod clean;
 mod smudge;
@@ -13,6 +13,7 @@ mod transfer;
 mod walrus;
 mod walrus_check;
 mod walrus_refresh;
+mod walrus_blob_id;
 
 #[derive(Debug, StructOpt)]
 #[structopt(author, about)]
@@ -54,6 +55,11 @@ enum Command {
         /// Files to refresh (if none provided, refreshes all expired LFS files)
         files: Vec<PathBuf>,
     },
+    /// Show the actual Walrus blob ID for a file
+    WalrusBlobId {
+        /// File to get blob ID for
+        file: PathBuf,
+    },
 }
 
 #[tokio::main]
@@ -86,5 +92,6 @@ async fn main() -> Result<()> {
         }
         Command::WalrusCheck { files } => walrus_check(client, files).await,
         Command::WalrusRefresh { files } => walrus_refresh(client, files).await,
+        Command::WalrusBlobId { file } => walrus_blob_id(client, file).await,
     }
 }

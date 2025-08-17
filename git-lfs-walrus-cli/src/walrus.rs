@@ -57,8 +57,10 @@ struct BlobStoreResult {
 
 #[derive(Debug, Deserialize)]
 struct BlobResult {
+    #[serde(rename = "blobObject")]
+    blob_object: Option<BlobObject>,
     #[serde(rename = "blobId")]
-    blob_id: String,
+    blob_id: Option<String>,
     // event: EventInfo,
     // #[serde(rename = "endEpoch")]
     // end_epoch: u64,
@@ -82,11 +84,11 @@ struct BlobInfo {
 
 #[derive(Debug, Deserialize)]
 struct BlobObject {
+    #[serde(rename = "blobId")]
+    blob_id: String,
     // id: String,
     // #[serde(rename = "storedEpoch")]
     // stored_epoch: u64,
-    // #[serde(rename = "blobId")]
-    // blob_id: String,
     // size: u64,
     // #[serde(rename = "erasureCodeType")]
     // erasure_code_type: String,
@@ -215,9 +217,9 @@ impl WalrusClient {
 
         // Extract blob ID from either newly created or already certified
         let blob_id = if let Some(newly_created) = &response.blob_store_result.newly_created {
-            newly_created.blob_id.clone()
+            extract_blob_id_from_result(newly_created)?
         } else if let Some(already_certified) = &response.blob_store_result.already_certified {
-            already_certified.blob_id.clone()
+            extract_blob_id_from_result(already_certified)?
         } else {
             return Err(anyhow::anyhow!("No blob ID found in response"));
         };
@@ -379,6 +381,26 @@ impl Default for WalrusClient {
 //     // the actual Walrus blob ID and maintain a separate mapping
 //     Ok(sha256_str.to_string())
 // }
+
+fn extract_blob_id_from_result(result: &BlobResult) -> anyhow::Result<String> {
+    // Try new format first (with blobObject)
+    if let Some(blob_object) = &result.blob_object {
+        return Ok(blob_object.blob_id.clone());
+    }
+    
+    // Fall back to old format (direct blobId)
+    if let Some(blob_id) = &result.blob_id {
+        return Ok(blob_id.clone());
+    }
+    
+    Err(anyhow::anyhow!("No blob ID found in result"))
+}
+
+impl WalrusClient {
+    pub fn walrus_path(&self) -> Option<&PathBuf> {
+        self.walrus_path.as_ref()
+    }
+}
 
 pub fn client() -> WalrusClient {
     WalrusClient::default()

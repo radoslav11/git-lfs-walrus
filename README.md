@@ -68,22 +68,6 @@ Set the default number of epochs for Walrus storage:
 git config lfs.walrus.defaultepochs 25  # Defaults to 50 if not set
 ```
 
-### Additional Commands (WIP)
-
-Check if your LFS files stored in Walrus have expired:
-
-```bash
-git-lfs-walrus-cli walrus-check                      # Check all LFS files
-git-lfs-walrus-cli walrus-check file1.bin file2.bin  # Check specific files
-```
-
-Refresh expired files in Walrus:
-
-```bash
-git-lfs-walrus-cli walrus-refresh                   # Refresh all expired files
-git-lfs-walrus-cli walrus-refresh file1.bin         # Refresh specific files
-```
-
 ## How it works
 
 - **Clean**: Stores files in Walrus and creates LFS pointer files with Walrus blob IDs
@@ -103,95 +87,13 @@ Files are stored using Walrus's decentralized blob storage with erasure coding f
    walrus list-blobs  # Should work without errors
    ```
 
-### Unit Tests
-
-Run the unit tests (note that integration tests are ignored by default since they require Walrus):
-
-```bash
-cd git-lfs-walrus-cli
-cargo test
-```
-
-To run tests that require Walrus to be installed and configured:
-
-```bash
-cargo test -- --ignored
-```
-
 ### Integration Testing
 
 An interactive test script is provided to demonstrate the functionality of the extension:
 
 ```bash
 ./integration_test.sh
-```
-
-#### Quick Integration Test
-
-1. **Build the project**:
-   ```bash
-   cargo build --release
-   ```
-
-2. **Manual CLI testing**:
-   ```bash
-   # Test basic argument parsing
-   ./target/release/git-lfs-walrus-cli --help
-   
-   # Test new commands
-   ./target/release/git-lfs-walrus-cli walrus-check
-   ./target/release/git-lfs-walrus-cli walrus-refresh
-   ```
-
-3. **Git LFS integration test** (using the provided test-repo):
-   ```bash
-   cd test-repo
-   
-   # Configure default epochs (optional)
-   git config lfs.walrus.defaultepochs 25
-   
-   # Add files (triggers Walrus storage)
-   git add .gitattributes large_file.txt
-   
-   # Check status
-   git status
-   
-   # Test commands
-   ../target/release/git-lfs-walrus-cli walrus-check
-   ```
-
-#### Verifying File Upload to Walrus
-
-After successfully adding files with `git add`, you can verify the upload worked:
-
-1. **Check the LFS pointer** (shows Walrus blob ID):
-   ```bash
-   git show HEAD:large_file.txt
-   ```
-
-2. **Test end-to-end retrieval** (best verification):
-   ```bash
-   # Backup original, delete, and retrieve from Walrus
-   cp large_file.txt large_file.txt.backup
-   rm large_file.txt
-   git checkout large_file.txt
-   
-   # Compare original vs retrieved
-   echo "=== Original ==="
-   cat large_file.txt.backup
-   echo "=== Retrieved from Walrus ==="
-   cat large_file.txt
-   ```
-
-3. **Extract Walrus blob ID** (for direct Walrus commands):
-   ```bash
-   # Extract the actual Walrus blob ID from the ext-0-walrus field
-   BLOB_ID=$(git show HEAD:large_file.txt | grep "ext-0-walrus" | cut -d' ' -f2)
-   echo "Walrus Blob ID: $BLOB_ID"
-   
-   # Check blob status in Walrus
-   walrus blob-status --blob-id $BLOB_ID
-   ```
+``` 
 
 #### Full Manual Setup
 
@@ -213,6 +115,9 @@ git config lfs.extension.walrus.clean "../clean_wrapper.sh ../target/release/git
 git config lfs.extension.walrus.smudge "../target/release/git-lfs-walrus-cli --walrus-path walrus smudge %f"
 git config lfs.extension.walrus.priority 0
 
+# Configure default epochs (optional)
+git config lfs.walrus.defaultepochs 25
+
 # Track large files
 echo "*.bin filter=lfs diff=lfs merge=lfs -text" > .gitattributes
 echo "large file content" > large-file.bin
@@ -229,21 +134,33 @@ echo "Walrus Blob ID: $BLOB_ID"
 walrus blob-status --blob-id $BLOB_ID
 ```
 
-### Troubleshooting Tests
+### Additional Commands
 
-- **Walrus CLI not found**: Ensure `walrus` is in your PATH
-- **Configuration errors**: Check your Walrus config file is valid
-- **Network issues**: Walrus requires network access to storage nodes
-- **Permission errors**: Ensure you have write access to the working directory
-
-### Demo Repository
-
-You can create a demo repository to test the integration:
+Get the actual Walrus blob ID for a file:
 
 ```bash
-git clone <this-repository>
-cd git-lfs-walrus
-cargo build --release
-
-# Follow the integration testing steps above
+git-lfs-walrus-cli walrus-blob-id file.txt          # Shows file SHA256 and Walrus blob ID
 ```
+
+Check if your LFS files stored in Walrus have expired:
+
+```bash
+git-lfs-walrus-cli walrus-check                      # Check all LFS files
+git-lfs-walrus-cli walrus-check file1.bin file2.bin  # Check specific files
+```
+
+Refresh expired files in Walrus:
+
+```bash
+git-lfs-walrus-cli walrus-refresh                   # Refresh all expired files
+git-lfs-walrus-cli walrus-refresh file1.bin         # Refresh specific files
+```
+
+### Unit Tests
+
+Run the unit tests (note that integration tests are ignored by default since they require Walrus):
+
+```bash
+cd git-lfs-walrus-cli
+cargo test
+````
