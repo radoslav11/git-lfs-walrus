@@ -14,5 +14,7 @@ Thumbs.db
 
 # Testing
 test-repo/
+test-repo2/
+test-repo3/
 test-walrus-lfs/
 *.tmp
