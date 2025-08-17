@@ -4,7 +4,7 @@
   <img src="logo.png" alt="git-lfs-walrus logo" width="200"/>
 </div>
 
-A [git-lfs](https://git-lfs.github.com/) custom transfer & extension that stores large files with Walrus decentralized storage.
+[Git LFS](https://git-lfs.github.com/) replaces large files with text pointers in Git repositories while storing the actual files on remote servers, keeping repos lightweight. Traditional Git LFS relies on centralized storage (GitHub LFS, etc.) with vendor lock-in and single points of failure. git-lfs-walrus provides a decentralized alternative using [Walrus](https://docs.wal.app/) distributed storage with erasure coding for redundancy, censorship resistance, and true data ownership.
 
 *Based on the excellent [git-lfs-ipfs](https://github.com/sameer/git-lfs-ipfs) project by Sameer Puri.*
 
@@ -185,10 +185,11 @@ After successfully adding files with `git add`, you can verify the upload worked
 
 3. **Extract Walrus blob ID** (for direct Walrus commands):
    ```bash
-   # The actual Walrus blob ID is in the comment line (if present)
-   BLOB_ID=$(git show HEAD:large_file.txt | grep "# walrus-blob-id:" | cut -d':' -f2 | tr -d ' ')
+   # Extract the actual Walrus blob ID from the ext-0-walrus field
+   BLOB_ID=$(git show HEAD:large_file.txt | grep "ext-0-walrus" | cut -d' ' -f2)
    echo "Walrus Blob ID: $BLOB_ID"
    
+   # Check blob status in Walrus
    walrus blob-status --blob-id $BLOB_ID
    ```
 
