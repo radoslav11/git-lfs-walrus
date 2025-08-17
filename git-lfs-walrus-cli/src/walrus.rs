@@ -1,7 +1,7 @@
 use anyhow::Result;
 use base64::Engine;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tokio::process::Command;
@@ -121,11 +121,16 @@ struct RegisterFromScratch {
 
 pub struct WalrusClient {
     config_path: Option<String>,
+    walrus_path: Option<PathBuf>,
 }
 
 impl WalrusClient {
     pub fn new() -> Self {
-        Self { config_path: None }
+        Self { config_path: None, walrus_path: None }
+    }
+
+    pub fn with_path(path: PathBuf) -> Self {
+        Self { config_path: None, walrus_path: Some(path) }
     }
 
     // pub fn with_config(config_path: String) -> Self {
@@ -147,7 +152,7 @@ impl WalrusClient {
 
         let json_input = serde_json::to_string(&store_cmd)?;
         
-        let mut child = Command::new("walrus")
+        let mut child = Command::new(self.walrus_path.as_deref().unwrap_or_else(|| "walrus".as_ref()))
             .args(&["json"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -201,7 +206,7 @@ impl WalrusClient {
 
         let json_input = serde_json::to_string(&read_cmd)?;
         
-        let mut child = Command::new("walrus")
+        let mut child = Command::new(self.walrus_path.as_deref().unwrap_or_else(|| "walrus".as_ref()))
             .args(&["json"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -257,7 +262,7 @@ impl WalrusClient {
 
         let json_input = serde_json::to_string(&read_cmd)?;
         
-        let mut child = Command::new("walrus")
+        let mut child = Command::new(self.walrus_path.as_deref().unwrap_or_else(|| "walrus".as_ref()))
             .args(&["json"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

@@ -3,6 +3,23 @@
 # Exit on error
 set -e
 
+# Find the walrus CLI
+WALRUS_PATH=$(which walrus)
+if [ -z "$WALRUS_PATH" ]; then
+    echo "walrus CLI not found. Please install it and make sure it's in your PATH."
+    exit 1
+fi
+
+# Check if walrus is configured
+if ! $WALRUS_PATH list-blobs >/dev/null 2>&1; then
+    echo "walrus CLI is not configured correctly. Please run \"walrus setup\" and try again."
+    exit 1
+fi
+
+# Enable verbose logging
+export GIT_TRACE=1
+export GIT_CURL_VERBOSE=1
+
 # Build the project
 echo "Building the project..."
 ./target/release/git-lfs-walrus-cli --help >/dev/null || cargo build --release
@@ -22,11 +39,14 @@ WALRUS_CLI_PATH=$(realpath ../target/release/git-lfs-walrus-cli)
 echo "Configuring git-lfs-walrus with path: $WALRUS_CLI_PATH"
 git config lfs.standalonetransferagent walrus
 git config lfs.customtransfer.walrus.path "$WALRUS_CLI_PATH"
-git config lfs.customtransfer.walrus.args "transfer"
+_args="--walrus-path $WALRUS_PATH transfer"
+git config lfs.customtransfer.walrus.args "$_args"
 git config lfs.customtransfer.walrus.concurrent true
 git config lfs.customtransfer.walrus.direction both
-git config lfs.extension.walrus.clean "$WALRUS_CLI_PATH clean %f"
-git config lfs.extension.walrus.smudge "$WALRUS_CLI_PATH smudge %f"
+_clean_args="--walrus-path $WALRUS_PATH clean %f"
+git config lfs.extension.walrus.clean "$WALRUS_CLI_PATH $_clean_args"
+_smudge_args="--walrus-path $WALRUS_PATH smudge %f"
+git config lfs.extension.walrus.smudge "$WALRUS_CLI_PATH $_smudge_args"
 git config lfs.extension.walrus.priority 0
 
 # Track a file type
