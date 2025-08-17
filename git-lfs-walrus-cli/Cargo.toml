@@ -8,6 +8,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 anyhow = "1"
+base64 = "0.21.0"
 serde_json = "1"
 git-lfs-spec = { path = "../git-lfs-spec", version = "0" }
 structopt = "0.3"

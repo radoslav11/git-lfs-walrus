@@ -1,4 +1,5 @@
 use anyhow::Result;
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::process::Stdio;
